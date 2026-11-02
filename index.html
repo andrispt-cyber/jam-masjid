@@ -25,6 +25,13 @@ main{height:auto;flex:1;min-height:0;box-sizing:border-box}
 .prayers{height:auto;flex:0 0 12%;min-height:0}
 .ticker{height:auto;flex:0 0 5%;min-height:0}
 @media(max-height:650px){.top{flex-basis:25%}.clock{font-size:clamp(32px,4.4vw,76px)}.date{font-size:clamp(11px,.95vw,17px)}}
+
+/* Header: judul dan alamat selalu di atas garis pembatas */
+header{height:auto;min-height:0;flex:0 0 12%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 12px;overflow:hidden}
+header h1{font-size:clamp(23px,min(2.7vw,4.2vh),52px);line-height:1.05;margin:0}
+header p{font-size:clamp(12px,min(1.1vw,2.2vh),20px);line-height:1.15;margin:0;max-width:100%;text-align:center}
+main{height:auto;flex:1;min-height:0}
+@media(max-height:650px){header{flex-basis:13%}header h1{font-size:clamp(20px,3.6vh,38px)}header p{font-size:clamp(11px,1.9vh,17px)}}
 </style></head><body><header><h1 id="name">MASJID AL-BARKAH</h1><p id="location">Pondok Kelapa, Duren Sawit, Jakarta Timur</p></header><main><div class="top"><div><div class="clock" id="clock">00:00:00</div><div class="date" id="date"></div><div class="date" id="hijri"></div></div><div><div>Menuju Waktu Salat</div><div class="next" id="next">—</div><div class="count" id="count">00:00:00</div></div></div><div class="middle" id="middle"><div class="media" id="media"><div class="medialabel" id="medialabel">FOTO MASJID</div><div id="notice"></div></div><aside class="sidepanel" id="sidepanel"></aside></div><div class="prayers" id="prayers"></div><div class="ticker" id="announce"><span id="annText"></span></div><div class="ticker kajian" id="kajian"><span id="kajText"></span></div></main><div id="blackout"></div><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
