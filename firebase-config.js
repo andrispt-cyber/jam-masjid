@@ -1,4 +1,4 @@
-const firebaseConfig = {
+window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyDh5S1-kYyBlHbaYyqBwSw25oa-MF9XgOg",
   authDomain: "jam-masjid-pondok-kelapa.firebaseapp.com",
   databaseURL: "https://jam-masjid-pondok-kelapa-default-rtdb.asia-southeast1.firebasedatabase.app",
