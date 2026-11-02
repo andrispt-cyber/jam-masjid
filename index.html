@@ -9,6 +9,22 @@ body{height:100dvh;overflow:hidden;display:flex;flex-direction:column}header{hei
   object-fit: cover;
   object-position: center center;
 }
+
+/* Perbaikan layout TV: setiap baris memiliki ruang sendiri */
+main{height:auto;flex:1;min-height:0;box-sizing:border-box}
+.top{height:auto;flex:0 0 23%;min-height:0}
+.top>div{min-height:0;overflow:hidden;padding:5px 8px}
+.clock{font-size:clamp(36px,5vw,96px);line-height:1}
+.date{font-size:clamp(12px,1.05vw,21px);line-height:1.15}
+.count{font-size:clamp(26px,2.7vw,58px);line-height:1.05}
+.next{font-size:clamp(13px,1.4vw,25px)}
+.middle{height:auto;flex:1 1 0;min-height:0;align-items:stretch}
+.middle .media{height:100%;min-height:0}
+.middle .media img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.sidepanel{height:100%;box-sizing:border-box}
+.prayers{height:auto;flex:0 0 12%;min-height:0}
+.ticker{height:auto;flex:0 0 5%;min-height:0}
+@media(max-height:650px){.top{flex-basis:25%}.clock{font-size:clamp(32px,4.4vw,76px)}.date{font-size:clamp(11px,.95vw,17px)}}
 </style></head><body><header><h1 id="name">MASJID AL-BARKAH</h1><p id="location">Pondok Kelapa, Duren Sawit, Jakarta Timur</p></header><main><div class="top"><div><div class="clock" id="clock">00:00:00</div><div class="date" id="date"></div><div class="date" id="hijri"></div></div><div><div>Menuju Waktu Salat</div><div class="next" id="next">—</div><div class="count" id="count">00:00:00</div></div></div><div class="middle" id="middle"><div class="media" id="media"><div class="medialabel" id="medialabel">FOTO MASJID</div><div id="notice"></div></div><aside class="sidepanel" id="sidepanel"></aside></div><div class="prayers" id="prayers"></div><div class="ticker" id="announce"><span id="annText"></span></div><div class="ticker kajian" id="kajian"><span id="kajText"></span></div></main><div id="blackout"></div><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
