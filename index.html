@@ -100,7 +100,7 @@ let settings=cleanData(DEFAULTS);let connected=false;let currentMediaKey='';let 
 function renderMedia(){
 let cfg=settings.media||{};
 if(cfg.mode==='slideshow'){
- const slides=(Array.isArray(cfg.slides)?cfg.slides:[]).filter(s=>s&&((s.mode==='text'&&String(s.text||'').trim())||(s.mode==='photo'&&String(s.url||'').trim())));
+ const slides=(Array.isArray(cfg.slides)?cfg.slides:[]).filter(s=>s&&((s.mode==='text'&&String(s.text||'').trim())||((s.mode==='photo'||s.mode==='youtube')&&String(s.url||'').trim())));
  const signature=JSON.stringify(slides)+'|'+(cfg.interval||30);
  if(signature!==centerSlideSignature){centerSlideSignature=signature;centerSlideIndex=0;centerSlideChanged=Date.now()}
  const interval=Math.max(5,Math.min(600,Number(cfg.interval)||30))*1000;
@@ -109,7 +109,7 @@ if(cfg.mode==='slideshow'){
 }
 let key=JSON.stringify(cfg);if(key===currentMediaKey)return;currentMediaKey=key;const host=$('media');host.querySelectorAll('img,iframe,video,.textmedia,.fallback,.slideshow-backdrop').forEach(x=>x.remove());let mode=cfg.mode||'photo',node;
 if(mode==='text'){node=document.createElement('div');node.className='textmedia';node.textContent=cfg.text||'Selamat datang di masjid'}
-else if(mode==='youtube'){const m=String(cfg.url||'').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|live\/|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);if(m){node=document.createElement('iframe');node.src='https://www.youtube-nocookie.com/embed/'+m[1]+'?autoplay=1&mute=1&playsinline=1';node.allow='autoplay;encrypted-media;picture-in-picture;fullscreen';node.allowFullscreen=true;node.referrerPolicy='strict-origin-when-cross-origin'}else{node=document.createElement('div');node.className='textmedia';node.textContent='URL YouTube tidak valid'}}
+else if(mode==='youtube'){const m=String(cfg.url||'').match(/(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:watch\?(?:[^#]*?&)?v=|live\/|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);if(m){node=document.createElement('iframe');node.src='https://www.youtube-nocookie.com/embed/'+m[1]+'?autoplay=1&mute=1&playsinline=1&controls=0&rel=0';node.allow='autoplay;encrypted-media;picture-in-picture;fullscreen';node.allowFullscreen=true;node.referrerPolicy='strict-origin-when-cross-origin'}else{node=document.createElement('div');node.className='textmedia';node.textContent='URL YouTube tidak valid'}}
 else if(mode==='video'){node=document.createElement('video');node.src=cfg.url||'';node.autoplay=true;node.loop=true;node.muted=true;node.playsInline=true;node.controls=false;node.onerror=()=>{node.replaceWith(fallback('Video tidak dapat diputar'))}}
 else{node=document.createElement('img');node.src=cfg.url||'masjid.jpg';node.onerror=()=>{if(node.src.endsWith('/masjid.jpg'))node.replaceWith(fallback('Foto masjid belum tersedia'));else node.src='masjid.jpg'}}
 node.classList?.add('mediacontent');if(settings.media?.mode==='slideshow'&&mode==='photo'){node.classList.add('slideshow-photo');const backdrop=document.createElement('div');backdrop.className='slideshow-backdrop';backdrop.style.backgroundImage='url('+JSON.stringify(node.src)+')';host.appendChild(backdrop);node.addEventListener('error',()=>{backdrop.style.backgroundImage='none'},{once:true})}host.appendChild(node);$('medialabel').textContent=({photo:'FOTO MASJID',video:'VIDEO',youtube:'LIVE / YOUTUBE',text:'INFORMASI MASJID'})[mode]||'MULTIMEDIA';}
