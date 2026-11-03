@@ -105,10 +105,34 @@ function renderMedia(){
 let cfg=settings.media||{};
 if(cfg.mode==='slideshow'){
  const slides=(Array.isArray(cfg.slides)?cfg.slides:[]).filter(s=>s&&((s.mode==='text'&&String(s.text||'').trim())||((s.mode==='photo'||s.mode==='youtube')&&String(s.url||'').trim())));
- const signature=JSON.stringify(slides)+'|'+(cfg.interval||30);
+ const photoSeconds=Math.max(5,Math.min(600,Number(cfg.interval)||30));
+ const liveSeconds=Math.max(10,Math.min(3600,Number(cfg.youtubeInterval)||300));
+ const signature=JSON.stringify(slides)+'|'+photoSeconds+'|'+liveSeconds;
  if(signature!==centerSlideSignature){centerSlideSignature=signature;centerSlideIndex=0;centerSlideChanged=Date.now()}
- const interval=Math.max(5,Math.min(600,Number(cfg.interval)||30))*1000;
- if(slides.length>1&&Date.now()-centerSlideChanged>=interval){centerSlideIndex=(centerSlideIndex+Math.floor((Date.now()-centerSlideChanged)/interval))%slides.length;centerSlideChanged=Date.now()}
+ // Setiap jenis slide memiliki durasi sendiri; jangan mereset video tiap detik.
+ if(slides.length>1){
+   let elapsed=Date.now()-centerSlideChanged;
+   let guard=0;
+   while(guard<slides.length+1){
+     const duration=(slides[centerSlideIndex].mode==='youtube'?liveSeconds:photoSeconds)*1000;
+     if(elapsed<duration)break;
+     elapsed-=duration;
+     centerSlideChanged+=duration;
+     centerSlideIndex=(centerSlideIndex+1)%slides.length;
+     guard++;
+   }
+   if(guard>=slides.length+1){
+     const cycle=slides.reduce((total,slide)=>total+(slide.mode==='youtube'?liveSeconds:photoSeconds)*1000,0);
+     const remainder=elapsed%cycle;
+     centerSlideChanged=Date.now()-remainder;
+     centerSlideIndex=0;
+     let rest=remainder;
+     while(rest>=(slides[centerSlideIndex].mode==='youtube'?liveSeconds:photoSeconds)*1000){
+       const duration=(slides[centerSlideIndex].mode==='youtube'?liveSeconds:photoSeconds)*1000;
+       rest-=duration;centerSlideChanged+=duration;centerSlideIndex=(centerSlideIndex+1)%slides.length;
+     }
+   }
+ }
  cfg=slides[centerSlideIndex]||{mode:'photo',url:'masjid.jpg'};
 }
 let key=JSON.stringify(cfg);if(key===currentMediaKey)return;currentMediaKey=key;const host=$('media');host.querySelectorAll('img,iframe,video,.textmedia,.fallback,.slideshow-backdrop').forEach(x=>x.remove());let mode=cfg.mode||'photo',node;
