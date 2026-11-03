@@ -94,6 +94,22 @@ header p{font-size:clamp(15px,min(1.65vw,3.0vh),29px)!important;line-height:1.12
 .friday-item .friday-person{font-size:.95em;margin-top:.18vw}
 .panel-slide p{font-size:clamp(17px,1.35vw,28px)}
 @media(max-width:800px){.panel-slide h2{font-size:20px}.panel-slide table,.friday-item{font-size:15px}.panel-hint{font-size:13px}}
+
+/* Judul jadwal Jumat dan bulan dalam satu baris */
+.friday-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;width:100%;flex-wrap:nowrap}
+.friday-heading h2{margin:0;flex:1;min-width:0;font-size:clamp(19px,1.65vw,34px)}
+.friday-heading .panel-hint{margin:0;white-space:nowrap;flex-shrink:0;font-size:clamp(13px,1.03vw,22px);color:#ffdc87}
+/* Jadwal Jumat: tabel tiga kolom, tulisan besar dan terbaca di layar TV */
+.friday-table-wrap{flex:1;min-height:0;overflow:auto;width:100%}
+.panel-slide table.friday-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:clamp(15px,1.04vw,23px);line-height:1.24}
+.friday-table th,.friday-table td{border:1px solid #7da99a;padding:.55vw .35vw;text-align:left!important;vertical-align:top;overflow-wrap:break-word;word-break:normal}
+.friday-table th{background:#276858;color:#ffe0a0;font-weight:800;font-size:1.06em}
+.friday-table td{color:#fff}
+.friday-table th:nth-child(1),.friday-table td:nth-child(1){width:23%;white-space:nowrap}
+.friday-table th:nth-child(2),.friday-table td:nth-child(2){width:49%}
+.friday-table th:nth-child(3),.friday-table td:nth-child(3){width:28%}
+.friday-table tbody tr:nth-child(even){background:rgba(255,255,255,.055)}
+@media(max-width:800px){.panel-slide table.friday-table{font-size:clamp(12px,1.6vw,17px)}.friday-table th,.friday-table td{padding:5px 3px}}
 </style></head><body><header><h1 id="name">MASJID AL-BARKAH</h1><p id="location">Pondok Kelapa, Duren Sawit, Jakarta Timur</p></header><main><div class="top"><div><div class="clock" id="clock">00:00:00</div><div class="date" id="date"></div><div class="date" id="hijri"></div></div><div><div>Menuju Waktu Salat</div><div class="next" id="next">—</div><div class="count" id="count">00:00:00</div></div></div><div class="middle" id="middle"><div class="media" id="media"><div class="medialabel" id="medialabel">FOTO MASJID</div><div id="notice"></div></div><aside class="sidepanel" id="sidepanel"></aside></div><div class="prayers" id="prayers" title="Jadwal manual DKM; dipakai untuk hitung mundur dan iqamah"></div><div class="ticker" id="announce"><span id="annText"></span></div><div class="ticker kajian" id="kajian"><span id="kajText"></span></div></main><div id="blackout"></div><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
@@ -188,9 +204,9 @@ function renderFinancePanel(){
  }else{
   const p=clockParts(),currentMonth=p.year+'-'+fmt(p.month);
   const rows=(j.month===currentMonth&&Array.isArray(j.rows)?j.rows:[]).filter(r=>r&&r.date&&r.name).slice().sort((a,b)=>a.date.localeCompare(b.date));
-  html+='<h2>Jadwal Khotib Jumat</h2><div class="panel-hint">'+panelEscape(j.month===currentMonth?new Intl.DateTimeFormat('id-ID',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(p.year,p.month-1,1))):'Bulan '+currentMonth)+'</div>';
+  html+='<div class="friday-heading"><h2>Jadwal Khotib Jumat '+panelEscape(new Intl.DateTimeFormat('id-ID',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(p.year,p.month-1,1))))+'</h2></div>';
   if(!rows.length)html+='<p>Jadwal khotib bulan ini belum diisi oleh DKM.</p>';
-  else {html+='<div class="friday-list">';for(const r of rows){html+='<div class="friday-item"><b>Jumat, '+panelEscape(r.date.slice(8,10))+'/'+panelEscape(r.date.slice(5,7))+'</b><div class="friday-person">Khotib: '+panelEscape(r.name)+'</div><div class="friday-person">Muadzin: '+panelEscape(r.muadzin||'Belum ditetapkan')+'</div></div>'}html+='</div>'}
+  else {html+='<div class="friday-table-wrap"><table class="friday-table"><thead><tr><th>Tanggal</th><th>Khotib</th><th>Muadzin</th></tr></thead><tbody>';for(const r of rows){html+='<tr><td>'+panelEscape(r.date.slice(8,10))+'/'+panelEscape(r.date.slice(5,7))+'</td><td>'+panelEscape(r.name)+'</td><td>'+panelEscape(r.muadzin||'—')+'</td></tr>'}html+='</tbody></table></div>'}
  }
  html+='</div>';host.innerHTML=html;
  if(slide==='document'){const box=host.querySelector('#panelDocument'),url=String(c.documentUrl||'').trim();if(!/^https:\/\//i.test(url)){box.textContent='Belum ada URL PDF atau gambar. Atur melalui Admin DKM.';}else if(/\.pdf(?:[?#]|$)/i.test(url)){const f=document.createElement('iframe');f.src=url;f.title='PDF laporan keuangan';box.appendChild(f);}else{const img=document.createElement('img');img.src=url;img.alt='Gambar laporan keuangan';img.onerror=()=>{box.textContent='Gambar tidak dapat dibuka. Periksa URL publik.'};box.appendChild(img);}}
@@ -199,3 +215,4 @@ const oldFinanceRender=render;render=function(){oldFinanceRender();panelLastKey=
 setInterval(renderFinancePanel,1000);
 setInterval(renderMedia,1000);
 </script></body></html>
+
