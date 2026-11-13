@@ -218,7 +218,7 @@ function renderFinancePanel(){
  const host=$('sidepanel');if(!host||!settings.sidePanelEnabled)return;
  const c=settings.financePanel||{},slides=['table','document','friday','studyMaghrib','studySubuh'];
  const slide=slides[Math.floor(Date.now()/30000)%slides.length];const j=settings.fridaySchedule||{},s=settings.studyPanel||{};
- const key=JSON.stringify(c)+'|'+JSON.stringify(j)+'|'+JSON.stringify(s)+'|'+slide;
+ const key=JSON.stringify(c)+'|'+JSON.stringify(j)+'|'+JSON.stringify(settings.kajian)+'|'+slide;
  if(key===panelLastKey)return;panelLastKey=key;
  const title=panelEscape(c.title||'Laporan Keuangan Masjid');
  const opening=Number(c.opening)||0,income=Number(c.income)||0,expense=Number(c.expense)||0,ending=opening+income-expense;
@@ -237,7 +237,16 @@ function renderFinancePanel(){
   const p=clockParts(),month=p.year+'-'+fmt(p.month),kind=slide==='studyMaghrib'?'maghrib':'subuh';
   const period=new Intl.DateTimeFormat('id-ID',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(p.year,p.month-1,1)));
   const titleText=kind==='maghrib'?'Jadwal Kajian Ba’da Maghrib':'Jadwal Kultum Ba’da Subuh';
-  const rows=(s.month===month&&Array.isArray(s[kind])?s[kind]:[]).filter(r=>r&&r.date&&r.speaker).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  // Gunakan satu sumber: settings.kajian (input Ahad Pagi/Malam di Admin).
+  // Tanggal Minggu dihitung otomatis berdasarkan bulan yang sedang berjalan.
+  const sundays=[];
+  for(let d=1;d<=new Date(p.year,p.month,0).getDate();d++){
+   if(new Date(p.year,p.month-1,d).getDay()===0)sundays.push(d);
+  }
+  const rows=sundays.map((d,w)=>{
+   const k=(settings.kajian||[])[w*2+(kind==='maghrib'?1:0)]||{};
+   return {date:month+'-'+fmt(d),speaker:String(k.speaker||'').trim(),topic:kind==='maghrib'?String(k.title||'').trim():''};
+  }).filter(r=>r.speaker);
   html+='<h2 class="study-heading">'+titleText+' '+panelEscape(period)+'</h2>';
   if(!rows.length)html+='<p>Jadwal '+(kind==='maghrib'?'kajian':'kultum')+' bulan ini belum diisi oleh DKM.</p>';
   else{html+='<div class="study-table-wrap"><table class="study-table '+(kind==='subuh'?'two-col':'')+'"><thead><tr><th>Tanggal</th><th>Pemateri</th>'+(kind==='maghrib'?'<th>Materi</th>':'')+'</tr></thead><tbody>';
