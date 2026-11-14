@@ -80,7 +80,7 @@ main {
 .panel-document{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .panel-document img,.panel-document iframe{width:100%;height:100%;border:0;object-fit:contain}
 .panel-hint{font-size:clamp(10px,.85vw,16px);color:#e8d8ab}
-.friday-list{overflow:auto;min-height:0;flex:1;display:flex;flex-direction:column;gap:.5vw}.friday-item{border-bottom:1px solid #659384;padding:.35vw 0;font-size:clamp(12px,1.05vw,22px);overflow-wrap:anywhere}.friday-item b{color:#ffdc87}.friday-item small{display:block;color:#d3e8db;font-size:.82em;margin-top:2px}.panel-slide p{font-size:clamp(12px,1vw,20px)}.middle .media img.slideshow-photo{object-fit:contain!important;background:transparent;position:relative;z-index:1}.media .slideshow-backdrop{position:absolute;inset:-18px;background-size:cover;background-position:center;filter:blur(18px) brightness(.42);transform:scale(1.04);pointer-events:none;z-index:0}.media .medialabel,.media #notice{display:none!important}.media .textmedia{font-size:clamp(25px,3.2vw,65px);line-height:1.3;overflow:auto;white-space:pre-wrap}
+.friday-list{overflow:auto;min-height:0;flex:1;display:flex;flex-direction:column;gap:.5vw}.friday-item{border-bottom:1px solid #659384;padding:.35vw 0;font-size:clamp(12px,1.05vw,22px);overflow-wrap:anywhere}.friday-item b{color:#ffdc87}.friday-item small{display:block;color:#d3e8db;font-size:.82em;margin-top:2px}.panel-slide p{font-size:clamp(12px,1vw,20px)}.middle .media img.slideshow-photo{object-fit:contain!important;background:transparent;position:relative;z-index:1}.media .slideshow-backdrop{position:absolute;inset:-18px;background-size:cover;background-position:center;filter:none;transform:scale(1.04);pointer-events:none;z-index:0}.media .medialabel,.media #notice{display:none!important}.media .textmedia{font-size:clamp(25px,3.2vw,65px);line-height:1.3;overflow:auto;white-space:pre-wrap}
 /* Panel kanan diperlebar menjadi 40%; panel slideshow menjadi sekitar 59%. */
 .middle.with-side .sidepanel{width:40%;flex:0 0 40%;min-width:0}
 .middle.with-side .media{flex:1 1 0;min-width:0}
@@ -153,6 +153,33 @@ function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;',
 </script>
 <script>
 let settings=cleanData(DEFAULTS);let connected=false;let currentMediaKey='';let centerSlideIndex=0,centerSlideChanged=Date.now(),centerSlideSignature='';
+
+const photoCache=new Map();
+let mediaRequestId=0;
+function preloadSlideshowPhotos(){
+ const media=settings.media||{};
+ if(media.mode!=='slideshow'||!Array.isArray(media.slides))return;
+ for(const slide of media.slides){
+  if(slide?.mode!=='photo'||!slide.url)continue;
+  const url=String(slide.url);
+  if(photoCache.has(url))continue;
+  const img=new Image();img.decoding='async';img.src=url;photoCache.set(url,img);
+ }
+}
+function showReadyPhoto(url,key,requestId){
+ if(requestId!==mediaRequestId)return;
+ const host=$('media');
+ const next=document.createElement('img');
+ next.className='mediacontent slideshow-photo';
+ next.alt='Foto slideshow masjid';
+ next.src=url;
+ next.style.cssText='width:100%;height:100%;object-fit:contain;display:block;position:relative;z-index:1';
+ // Pertahankan gambar lama sampai gambar baru selesai dimuat.
+ host.querySelectorAll('img,iframe,video,.textmedia,.fallback,.slideshow-backdrop').forEach(x=>x.remove());
+ host.appendChild(next);
+ currentMediaKey=key;
+ $('medialabel').textContent='FOTO MASJID';
+}
 function renderMedia(){
 let cfg=settings.media||{};
 if(cfg.mode==='slideshow'){
@@ -187,12 +214,33 @@ if(cfg.mode==='slideshow'){
  }
  cfg=slides[centerSlideIndex]||{mode:'photo',url:'masjid.jpg'};
 }
-let key=JSON.stringify(cfg);if(key===currentMediaKey)return;currentMediaKey=key;const host=$('media');host.querySelectorAll('img,iframe,video,.textmedia,.fallback,.slideshow-backdrop').forEach(x=>x.remove());let mode=cfg.mode||'photo',node;
+let key=JSON.stringify(cfg);if(key===currentMediaKey)return;
+const host=$('media'),mode=cfg.mode||'photo';
+if(mode==='photo'){
+ const url=cfg.url||'masjid.jpg';
+ const requestId=++mediaRequestId;
+ const ready=photoCache.get(url);
+ if(ready?.complete&&ready.naturalWidth>0){showReadyPhoto(url,key,requestId);return}
+ if(!photoCache.has(url)){
+   const pre=new Image();pre.decoding='async';photoCache.set(url,pre);
+   pre.onload=()=>{if(requestId===mediaRequestId)showReadyPhoto(url,key,requestId)};
+   pre.onerror=()=>{photoCache.delete(url);if(requestId===mediaRequestId)showReadyPhoto('masjid.jpg',key,requestId)};
+   pre.src=url;
+ }else{
+   const pre=photoCache.get(url);
+   pre.addEventListener('load',()=>{if(requestId===mediaRequestId)showReadyPhoto(url,key,requestId)},{once:true});
+   pre.addEventListener('error',()=>{if(requestId===mediaRequestId)showReadyPhoto('masjid.jpg',key,requestId)},{once:true});
+ }
+ return;
+}
+++mediaRequestId;currentMediaKey=key;
+host.querySelectorAll('img,iframe,video,.textmedia,.fallback,.slideshow-backdrop').forEach(x=>x.remove());
+let node;
 if(mode==='text'){node=document.createElement('div');node.className='textmedia';node.textContent=cfg.text||'Selamat datang di masjid'}
 else if(mode==='youtube'){const m=String(cfg.url||'').match(/(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:watch\?(?:[^#]*?&)?v=|live\/|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);if(m){node=document.createElement('iframe');node.src='https://www.youtube-nocookie.com/embed/'+m[1]+'?autoplay=1&mute=1&playsinline=1&controls=0&rel=0';node.allow='autoplay;encrypted-media;picture-in-picture;fullscreen';node.allowFullscreen=true;node.referrerPolicy='strict-origin-when-cross-origin'}else{node=document.createElement('div');node.className='textmedia';node.textContent='URL YouTube tidak valid'}}
 else if(mode==='video'){node=document.createElement('video');node.src=cfg.url||'';node.autoplay=true;node.loop=true;node.muted=true;node.playsInline=true;node.controls=false;node.onerror=()=>{node.replaceWith(fallback('Video tidak dapat diputar'))}}
-else{node=document.createElement('img');node.src=cfg.url||'masjid.jpg';node.onerror=()=>{if(node.src.endsWith('/masjid.jpg'))node.replaceWith(fallback('Foto masjid belum tersedia'));else node.src='masjid.jpg'}}
-node.classList?.add('mediacontent');if(settings.media?.mode==='slideshow'&&mode==='photo'){node.classList.add('slideshow-photo');const backdrop=document.createElement('div');backdrop.className='slideshow-backdrop';backdrop.style.backgroundImage='url('+JSON.stringify(node.src)+')';host.appendChild(backdrop);node.addEventListener('error',()=>{backdrop.style.backgroundImage='none'},{once:true})}host.appendChild(node);$('medialabel').textContent=({photo:'FOTO MASJID',video:'VIDEO',youtube:'LIVE / YOUTUBE',text:'INFORMASI MASJID'})[mode]||'MULTIMEDIA';}
+
+node.classList?.add('mediacontent');host.appendChild(node);$('medialabel').textContent=({photo:'FOTO MASJID',video:'VIDEO',youtube:'LIVE / YOUTUBE',text:'INFORMASI MASJID'})[mode]||'MULTIMEDIA';}
 function fallback(t){let x=document.createElement('div');x.className='textmedia fallback';x.textContent=t;return x}
 let kemenagDay='',kemenagTimes=null,kemenagError='';
 function jakartaDay(){const p=clockParts();return [p.year,fmt(p.month),fmt(p.day)].join('-')}
@@ -207,7 +255,7 @@ function renderKajian(){const now=clockParts(),sundays=[];for(let d=1;d<=new Dat
 function tick(){const now=new Date(),p=clockParts(),sec=p.hour*3600+p.minute*60+p.second;$('clock').textContent=[p.hour,p.minute,p.second].map(fmt).join(':');$('date').textContent=new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(now);try{$('hijri').textContent=new Intl.DateTimeFormat('id-ID-u-ca-islamic',{timeZone:'Asia/Jakarta',day:'numeric',month:'long',year:'numeric'}).format(now)+' H (perkiraan)'}catch(e){}
 let arr=NAMES.filter(n=>n!=='terbit').map(n=>({n,s:seconds(correctedTime(n))})),future=arr.map(x=>({...x,delta:(x.s-sec+86400)%86400})).sort((a,b)=>a.delta-b.delta),next=future[0];let iq=arr.find(x=>{const elapsed=(sec-x.s+86400)%86400;return elapsed<Math.round((settings.iqamahTimes[x.n]||0)*60)});if(iq){next={n:iq.n,delta:Math.round((settings.iqamahTimes[iq.n]||0)*60)-((sec-iq.s+86400)%86400)};$('next').textContent='Iqamah '+iq.n.toUpperCase()}else{$('next').textContent=next.n.toUpperCase()+' — '+correctedTime(next.n)}
 $('count').textContent=[Math.floor(next.delta/3600),Math.floor(next.delta%3600/60),next.delta%60].map(fmt).join(':');let dark=!!settings.blackoutEnabled&&arr.some(x=>{const start=(x.s+Math.round((settings.iqamahTimes[x.n]||0)*60))%86400;return (sec-start+86400)%86400<(settings.blackoutDuration||15)*60});$('blackout').classList.toggle('active',dark);}
-if(db){$('notice').textContent='Menghubungkan…';db.ref('masjid/public').on('value',snap=>{connected=true;settings=cleanData(snap.val()||DEFAULTS);$('notice').textContent=snap.exists()?'':'Belum ada data: simpan dari halaman admin';render();refreshKemenag()},err=>{$('notice').textContent='Koneksi database gagal';console.error(err)})}else{$('notice').textContent='Firebase belum dikonfigurasi';render()}
+if(db){$('notice').textContent='Menghubungkan…';db.ref('masjid/public').on('value',snap=>{connected=true;settings=cleanData(snap.val()||DEFAULTS);preloadSlideshowPhotos();$('notice').textContent=snap.exists()?'':'Belum ada data: simpan dari halaman admin';render();refreshKemenag()},err=>{$('notice').textContent='Koneksi database gagal';console.error(err)})}else{$('notice').textContent='Firebase belum dikonfigurasi';render()}
 setInterval(tick,1000);setInterval(renderKajian,60000);setInterval(refreshKemenag,60000);tick();
 
 /* Panel kanan: tabel, dokumen, jadwal khotib berganti 30 detik */
